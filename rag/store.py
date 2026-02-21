@@ -5,43 +5,44 @@ Created on Sun Feb 15 20:43:30 2026
 
 @author: guotiankai
 """
-from sentence_transformers import SentenceTransformer
-import faiss
+from openai import OpenAI
 import numpy as np
+
+client = OpenAI()
 
 class VectorStore:
 
     def __init__(self):
-        self.model = SentenceTransformer("all-MiniLM-L6-v2")
-        self.index = None
+        self.embeddings = []
         self.docs = []
+
+    def embed(self, texts):
+        resp = client.embeddings.create(
+            model="text-embedding-3-small",
+            input=texts
+        )
+        return [d.embedding for d in resp.data]
 
     def build(self, documents):
         self.docs = documents
-
-        embeddings = self.model.encode(
-            [d["content"] for d in documents],
-            show_progress_bar=True
-        )
-
-        embeddings = np.array(embeddings).astype("float32")
-
-        dim = embeddings.shape[1]
-        self.index = faiss.IndexFlatIP(dim)
-        faiss.normalize_L2(embeddings)
-
-        self.index.add(embeddings)
+        contents = [d["content"] for d in documents]
+        self.embeddings = np.array(self.embed(contents))
 
     def search(self, query, k=5):
-        q = self.model.encode([query]).astype("float32")
-        faiss.normalize_L2(q)
-    
-        scores, ids = self.index.search(q, k)
-    
+        q_emb = np.array(self.embed([query])[0])
+
+        # cosine similarity
+        sims = self.embeddings @ q_emb / (
+            np.linalg.norm(self.embeddings, axis=1) *
+            np.linalg.norm(q_emb)
+        )
+
+        top_idx = sims.argsort()[-k:][::-1]
+
         results = []
-        for score, idx in zip(scores[0], ids[0]):
+        for idx in top_idx:
             doc = self.docs[idx]
-            doc["score"] = float(score)
+            doc["score"] = float(sims[idx])
             results.append(doc)
-    
+
         return results
