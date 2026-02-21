@@ -1,0 +1,28 @@
+Thermal Deformation of SX250H Power Supply Copper Bar Plastic Housing
+Problem Statement
+When: 2024/09/30
+Where: Production assembly
+During the offline testing of the electric drive, the copper power rail’s plastic housing was melted and deformed.
+Vendor: 陆巡科技
+Failed component batch: 2438
+
+Containment
+Issued replacement plastic housing for all problematic downstream shipments.
+Internally returned problematic semi-finished and finished goods for rework.
+
+Root Cause Identification / Failure Analysis
+The plastic housing of the battery copper bar partially melted upon coming into contact with the battery connector’s OT terminus.
+During reproduction, both the copper bar and the OT terminus were both connected and at 110℃, close to the heat deflection temperature of the plastic housing, resulting in deformation.
+The plastic housing material was polyoxymethylene (POM) with a heat deflection temperature (HDT) of 130℃, a long term max operating temperature of 100℃ and a short term max operating temperature of 150℃, a melting point of 165℃. The material was unfit for the use case.
+Did not thoroughly review the supplier’s bill of materials (BOM).
+Quality control did not account for long term usage.
+No particular testing item for this failure mode.
+
+Corrective Action
+Control material choice for critical upstream components.
+Change the plastic housing to PPS instead of POM.
+
+Validation
+
+Preventative Measures
+More thorough review of the supplier’s BOM.

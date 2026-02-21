@@ -1,0 +1,25 @@
+SX250H Summer Edition DCDC Max Power Remained 0kW
+Problem Statement
+When: 2025/08/08
+Where: Summer Edition Testing
+DCDC_MaxOptPower remained at 0kW.
+Vendor: 深圳陆巡
+Component batch: MCUR: SW: 1.00.B_250722_8055_00 CDU:250604
+
+Containment
+
+Root Cause Identification / Failure Analysis
+DCDC_MaxOptPwr initializes to 0. Software takes the minimum between the initialized value and its value from the last cycle, thus displaying 0.
+Software logic failure, locking the value at 0.
+Summer Edition received an unvalidated software update which included the comparison logic, while the Winter Edition did not.
+Software was not fully tested before applying the update.
+
+Corrective Action
+Updated software to remove the comparison logic.
+Thorough function test of the software before applying the update.
+
+Validation
+
+Preventative Measures
+Apply better version control, and formalize testing procedures prior to update application.
+Add to the knowledge base.

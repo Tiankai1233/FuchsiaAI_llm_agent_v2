@@ -1,0 +1,16 @@
+# Web
+fastapi>=0.109.0
+uvicorn[standard]>=0.27.0
+pydantic>=2.0
+
+# LLM
+openai>=1.12.0
+python-dotenv>=1.0.0
+
+# RAG
+sentence-transformers>=2.2.0
+faiss-cpu>=1.7.4
+numpy>=1.24.0
+
+# Optional: Gemini (uncomment if using provider=gemini)
+# google-genai>=1.0.0

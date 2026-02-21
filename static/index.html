@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fuchsia Intelligent FA Copilot</title>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #0E1117; --bg-sidebar: #111116; --bg-card: #161B22; --border-color: #30363D;
+            --text-primary: #FAFAFA; --text-secondary: #8B949E; --accent-purple: #C026D3; --accent-cyan: #06B6D4;
+            --gradient-purple: linear-gradient(90deg, #C026D3, #7E22CE);
+            --left-width: 260px; --right-width: 360px;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--bg-dark); color: var(--text-primary);
+            height: 100vh; width: 100vw; display: grid;
+            grid-template-columns: var(--left-width) 5px 1fr 5px var(--right-width);
+            overflow: hidden;
+        }
+
+        .resizer-h { cursor: col-resize; background: transparent; transition: 0.2s; z-index: 10; }
+        .resizer-h:hover, .resizer-h.active { background: var(--accent-purple); box-shadow: 0 0 10px var(--accent-purple); }
+
+        /* --- Left sidebar --- */
+        .sidebar-left { background-color: var(--bg-sidebar); border-right: 1px solid var(--border-color); display: flex; flex-direction: column; overflow: hidden; }
+        .brand { padding: 16px 20px; display: flex; align-items: center; gap: 12px; flex-shrink: 0; border-bottom: 1px solid var(--border-color); }
+        .brand-logo-img { height: 36px; width: 36px; flex-shrink: 0; }
+        .scroll-area { flex: 1; overflow-y: auto; padding: 0 12px 12px 12px; }
+        .section-header { font-size: 10px; color: var(--text-secondary); font-weight: 700; margin: 16px 0 8px 8px; text-transform: uppercase; letter-spacing: 1px; }
+
+        .btn-new-chat { display: flex; align-items: center; gap: 8px; width: 100%; padding: 10px 14px; margin: 12px 0 4px 0; background: var(--gradient-purple); color: white; border: none; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; transition: opacity 0.2s; }
+        .btn-new-chat:hover { opacity: 0.85; }
+
+        .session-item { display: flex; align-items: center; gap: 8px; padding: 8px 12px; color: var(--text-secondary); border-radius: 8px; cursor: pointer; font-size: 12px; margin-bottom: 2px; transition: background 0.15s; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+        .session-item:hover { background: var(--bg-card); color: var(--text-primary); }
+        .session-item.active { background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border-color); }
+        .session-item .delete-btn { margin-left: auto; opacity: 0; font-size: 14px; color: var(--text-secondary); cursor: pointer; flex-shrink: 0; }
+        .session-item:hover .delete-btn { opacity: 0.7; }
+        .session-item .delete-btn:hover { opacity: 1; color: #EF4444; }
+
+        .ref-item { display: flex; align-items: center; gap: 8px; padding: 7px 10px; color: var(--accent-cyan); border-radius: 8px; cursor: pointer; font-size: 11px; margin-bottom: 2px; transition: background 0.15s; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+        .ref-item:hover { background: var(--bg-card); }
+        .ref-item .ref-score { margin-left: auto; font-size: 10px; color: var(--text-secondary); flex-shrink: 0; }
+        .ref-placeholder { font-size: 11px; color: var(--text-secondary); padding: 6px 10px; font-style: italic; }
+
+        .doc-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 1000; display: none; align-items: center; justify-content: center; }
+        .doc-overlay.open { display: flex; }
+        .doc-panel { background: var(--bg-sidebar); border: 1px solid var(--border-color); border-radius: 12px; width: 680px; max-width: 90vw; max-height: 80vh; display: flex; flex-direction: column; overflow: hidden; }
+        .doc-panel-header { padding: 14px 18px; border-bottom: 1px solid var(--border-color); display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+        .doc-panel-header h3 { font-size: 13px; font-weight: 600; color: var(--accent-cyan); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .doc-panel-close { background: none; border: none; color: var(--text-secondary); cursor: pointer; font-size: 20px; padding: 0; line-height: 1; }
+        .doc-panel-close:hover { color: var(--text-primary); }
+        .doc-panel-body { flex: 1; overflow-y: auto; padding: 18px; font-size: 13px; line-height: 1.7; color: var(--text-secondary); white-space: pre-wrap; }
+
+        .rag-stats { margin: 8px 0; padding: 12px 14px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 10px; }
+        .rag-stats-title { font-size: 10px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+        .rag-stats-row { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-primary); }
+        .rag-stats-count { font-size: 20px; font-weight: 700; background: var(--gradient-purple); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; color: transparent; }
+
+        /* --- Middle main area --- */
+        .main-area { display: flex; flex-direction: column; height: 100vh; background-color: var(--bg-dark); overflow: hidden; }
+        .chat-container { flex: 1; overflow-y: auto; padding: 20px 25px; display: flex; flex-direction: column; gap: 15px; }
+        .message-content { background-color: var(--bg-card); border: 1px solid var(--border-color); padding: 12px 18px; border-radius: 12px; max-width: 85%; font-size: 14px; line-height: 1.6; white-space: pre-wrap; }
+        .user-msg { align-self: flex-end; background: var(--gradient-purple); border: none; padding: 10px 15px; border-radius: 12px; font-size: 14px; max-width: 85%; }
+
+        /* --- Right sidebar --- */
+        .sidebar-right { background-color: var(--bg-sidebar); border-left: 1px solid var(--border-color); padding: 15px; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+        .confidence-label { display: flex; justify-content: space-between; font-size: 11px; font-weight: 700; color: var(--text-secondary); margin-bottom: 8px; }
+        .progress-bar-bg { height: 8px; background: var(--bg-dark); border-radius: 4px; border: 1px solid var(--border-color); overflow: hidden; margin-bottom: 16px; }
+        .progress-bar-fill { height: 100%; width: 0%; background: linear-gradient(90deg, var(--accent-purple), var(--accent-cyan)); box-shadow: 0 0 12px rgba(192, 38, 211, 0.5); transition: width 0.6s ease; }
+
+        .report-card { background-color: var(--bg-card); border: 1px solid var(--border-color); padding: 12px; border-radius: 10px; }
+        .card-title { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+
+        .bullet-list { list-style: none; padding: 0; margin: 0; font-size: 12px; color: var(--text-secondary); line-height: 1.6; flex: 1; overflow-y: auto; }
+        .bullet-list li { padding: 4px 0 4px 14px; position: relative; }
+        .bullet-list li::before { content: ""; position: absolute; left: 0; top: 11px; width: 6px; height: 6px; border-radius: 50%; background: var(--accent-purple); }
+        .bullet-list.cyan li::before { background: var(--accent-cyan); }
+        .bullet-placeholder { font-size: 11px; color: var(--text-secondary); padding: 4px 0; font-style: italic; }
+
+        .btn-generate { background: linear-gradient(90deg, #10B981, #06B6D4); color: white; border: none; padding: 12px; border-radius: 10px; font-weight: bold; cursor: pointer; flex-shrink: 0; width: 100%; transition: opacity 0.2s; }
+        .btn-generate:hover { opacity: 0.85; }
+
+        .analysis-loading { text-align: center; padding: 4px 0; font-size: 11px; color: var(--accent-purple); flex-shrink: 0; min-height: 20px; }
+
+        /* --- Image input --- */
+        .input-container { position: relative; }
+        .input-wrapper { position: relative; display: flex; align-items: center; gap: 10px; }
+        .input-wrapper.drag-over { border-color: var(--accent-purple); background-color: rgba(192, 38, 211, 0.1); }
+        #user-input { flex: 1; }
+        .image-preview-container { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+        .image-preview { position: relative; width: 80px; height: 80px; border-radius: 8px; overflow: hidden; border: 1px solid var(--border-color); }
+        .image-preview img { width: 100%; height: 100%; object-fit: cover; }
+        .image-preview .remove-btn { position: absolute; top: 4px; right: 4px; background: rgba(0, 0, 0, 0.7); color: white; border: none; border-radius: 50%; width: 20px; height: 20px; cursor: pointer; font-size: 12px; display: flex; align-items: center; justify-content: center; }
+        .image-preview .remove-btn:hover { background: rgba(239, 68, 68, 0.9); }
+        .file-input-label { cursor: pointer; padding: 8px 12px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-secondary); font-size: 12px; display: flex; align-items: center; gap: 6px; transition: all 0.2s; }
+        .file-input-label:hover { border-color: var(--accent-purple); color: var(--accent-purple); }
+        .file-input-label .material-icons-round { font-size: 18px; }
+        #file-input { display: none; }
+    </style>
+</head>
+<body>
+    <aside class="sidebar-left">
+        <div class="brand">
+            <svg viewBox="0 0 120 120" class="brand-logo-img" xmlns="http://www.w3.org/2000/svg">
+                <defs><linearGradient id="hG"><stop offset="0%" stop-color="#C026D3"/><stop offset="100%" stop-color="#7E22CE"/></linearGradient></defs>
+                <ellipse cx="60" cy="60" rx="56" ry="22" fill="none" stroke="#F0ABFC" stroke-width="2" transform="rotate(-35 60 60)" opacity="0.6"/>
+                <polygon points="60,35 82,47 82,73 60,85 38,73 38,47" fill="url(#hG)" stroke="#E879F9" stroke-width="3" />
+                <circle cx="60" cy="60" r="10" fill="#22D3EE" />
+            </svg>
+            <h1 style="background: var(--gradient-purple); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; color: transparent; font-size: 20px; font-weight: bold;">Fuchsia</h1>
+        </div>
+        <div class="scroll-area">
+            <button class="btn-new-chat" onclick="newSession()">
+                <span class="material-icons-round" style="font-size:18px;">add</span>
+                New Investigation
+            </button>
+
+            <div class="section-header">History</div>
+            <div id="session-list">
+                <div style="font-size:11px; color:var(--text-secondary); padding:8px 12px;">No sessions yet</div>
+            </div>
+
+            <div class="section-header" style="margin-top:20px;">Resolved References</div>
+            <div id="ref-list">
+                <div class="ref-placeholder">No references yet</div>
+            </div>
+
+            <div class="section-header" style="margin-top:20px;">Knowledge Base</div>
+            <div class="rag-stats">
+                <div class="rag-stats-title">RAG Document Store</div>
+                <div class="rag-stats-row">
+                    <span class="material-icons-round" style="font-size:20px; color:var(--accent-cyan);">description</span>
+                    <span class="rag-stats-count" id="doc-count">—</span>
+                    <span style="color:var(--text-secondary); font-size:12px;">documents indexed</span>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <div class="resizer-h" id="resizer-left"></div>
+
+    <main class="main-area">
+        <div style="padding: 15px 25px; border-bottom: 1px solid var(--border-color); font-size: 14px; font-weight: 600;">Investigation Workspace</div>
+        <div class="chat-container" id="chat-box">
+            <div class="message-content">Fuchsia 系统就绪。请列出项目编号并描述需要分析的故障。</div>
+        </div>
+        <div style="padding: 15px 25px; border-top: 1px solid var(--border-color);">
+            <div class="input-container">
+                <div class="input-wrapper" id="input-wrapper">
+                    <input type="text" id="user-input" style="width:100%; background:var(--bg-card); border:1px solid var(--border-color); padding:12px; border-radius:12px; color:white; outline:none;" placeholder="Describe failure or drag images here..." onkeypress="if(event.key==='Enter')sendMessage()">
+                    <label for="file-input" class="file-input-label" title="Upload image">
+                        <span class="material-icons-round">image</span>
+                    </label>
+                    <input type="file" id="file-input" accept="image/*" multiple>
+                </div>
+                <div class="image-preview-container" id="image-preview-container"></div>
+            </div>
+        </div>
+    </main>
+
+    <div class="resizer-h" id="resizer-right"></div>
+
+    <aside class="sidebar-right">
+        <div class="confidence-label"><span>CONFIDENCE</span><span id="conf-val">0%</span></div>
+        <div class="progress-bar-bg"><div class="progress-bar-fill" id="conf-bar"></div></div>
+
+        <div class="report-card" style="margin-bottom:10px; flex-shrink:0;">
+            <div class="card-title" style="color:var(--text-secondary);">Problem</div>
+            <div id="problem-statement" style="font-size:12px; color:var(--accent-cyan);">Waiting...</div>
+        </div>
+
+        <div class="analysis-loading" id="analysis-status"></div>
+
+        <div style="flex:1; display:flex; flex-direction:column; gap:10px; min-height:0; overflow:hidden;">
+            <div class="report-card" style="flex:1; display:flex; flex-direction:column; min-height:60px; overflow:hidden;">
+                <div class="card-title" style="color:var(--text-secondary);">Root Cause Hypothesis</div>
+                <ul class="bullet-list" id="root-cause-list">
+                    <div class="bullet-placeholder">Awaiting investigation...</div>
+                </ul>
+            </div>
+
+            <div class="report-card" style="flex-shrink:0; padding:10px;">
+                <div class="card-title" style="color:var(--accent-purple);">Live Fishbone</div>
+                <svg id="fishbone-svg" viewBox="0 0 310 170" width="100%" preserveAspectRatio="xMidYMid meet" style="display:block;">
+                    <text x="155" y="90" fill="#8B949E" font-size="11" text-anchor="middle" font-family="sans-serif">Awaiting analysis...</text>
+                </svg>
+            </div>
+
+            <div class="report-card" style="flex:1; display:flex; flex-direction:column; min-height:60px; overflow:hidden;">
+                <div class="card-title" style="color:var(--text-secondary);">Corrective Actions</div>
+                <ul class="bullet-list cyan" id="corrective-actions-list">
+                    <div class="bullet-placeholder">Awaiting investigation...</div>
+                </ul>
+            </div>
+
+            <button class="btn-generate">Generate Report</button>
+        </div>
+    </aside>
+
+    <div class="doc-overlay" id="doc-overlay" onclick="if(event.target===this)closeDocViewer()">
+        <div class="doc-panel">
+            <div class="doc-panel-header">
+                <span class="material-icons-round" style="color:var(--accent-cyan); font-size:18px;">description</span>
+                <h3 id="doc-viewer-title">Document</h3>
+                <button class="doc-panel-close" onclick="closeDocViewer()">&times;</button>
+            </div>
+            <div class="doc-panel-body" id="doc-viewer-body"></div>
+        </div>
+    </div>
+
+    <script>
+        /* ========== Resizer ========== */
+        const initH = (id, side) => {
+            const el = document.getElementById(id);
+            el.onmousedown = (e) => {
+                const startX = e.clientX;
+                const startW = parseInt(getComputedStyle(document.body).getPropertyValue(`--${side}-width`));
+                document.onmousemove = (ev) => {
+                    const delta = side === 'left' ? ev.clientX - startX : startX - ev.clientX;
+                    document.body.style.setProperty(`--${side}-width`, `${startW + delta}px`);
+                };
+                document.onmouseup = () => { document.onmousemove = null; };
+            };
+        };
+        initH('resizer-left', 'left');
+        initH('resizer-right', 'right');
+
+        /* ========== Helpers ========== */
+        function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+        /* ========== Session management ========== */
+        let sID = 's_' + Math.random().toString(36).substr(2, 8);
+
+        function newSession() {
+            sID = 's_' + Math.random().toString(36).substr(2, 8);
+            document.getElementById('chat-box').innerHTML = '<div class="message-content">Fuchsia 系统就绪。请列出项目编号并描述需要分析的故障。</div>';
+            document.getElementById('problem-statement').textContent = 'Waiting...';
+            document.getElementById('conf-val').textContent = '0%';
+            document.getElementById('conf-bar').style.width = '0%';
+            document.getElementById('root-cause-list').innerHTML = '<div class="bullet-placeholder">Awaiting investigation...</div>';
+            document.getElementById('corrective-actions-list').innerHTML = '<div class="bullet-placeholder">Awaiting investigation...</div>';
+            document.getElementById('fishbone-svg').innerHTML = '<text x="155" y="90" fill="#8B949E" font-size="11" text-anchor="middle" font-family="sans-serif">Awaiting analysis...</text>';
+            document.getElementById('analysis-status').textContent = '';
+            document.getElementById('ref-list').innerHTML = '<div class="ref-placeholder">No references yet</div>';
+            Object.keys(refStore).forEach(k => delete refStore[k]);
+            selectedImages = [];
+            updateImagePreview();
+            loadSessions();
+        }
+
+        async function loadSessions() {
+            try {
+                const r = await fetch('/sessions');
+                const sessions = await r.json();
+                const container = document.getElementById('session-list');
+                if (!sessions.length) {
+                    container.innerHTML = '<div style="font-size:11px; color:var(--text-secondary); padding:8px 12px;">No sessions yet</div>';
+                    return;
+                }
+                container.innerHTML = sessions.map(s => `
+                    <div class="session-item ${s.id === sID ? 'active' : ''}" onclick="switchSession('${s.id}')">
+                        <span class="material-icons-round" style="font-size:16px; flex-shrink:0; color:var(--accent-purple);">chat_bubble_outline</span>
+                        <span style="overflow:hidden; text-overflow:ellipsis;">${esc(s.title || 'Untitled')}</span>
+                        <span class="material-icons-round delete-btn" onclick="event.stopPropagation(); deleteSession('${s.id}')">close</span>
+                    </div>
+                `).join('');
+            } catch (e) { console.error('Failed to load sessions:', e); }
+        }
+
+        async function switchSession(id) {
+            sID = id;
+            const chatBox = document.getElementById('chat-box');
+            chatBox.innerHTML = '';
+            try {
+                const r = await fetch(`/history/${id}`);
+                const data = await r.json();
+                (data.messages || []).forEach(m => {
+                    if (m.role === 'system') return;
+                    if (m.role === 'user') {
+                        chatBox.innerHTML += `<div class="user-msg">${esc(m.content)}</div>`;
+                    } else {
+                        chatBox.innerHTML += `<div class="message-content">${m.content}</div>`;
+                    }
+                });
+                chatBox.scrollTop = chatBox.scrollHeight;
+                loadSessions();
+                analyzeConversation();
+                loadReferences();
+            } catch (e) { console.error('Failed to load history:', e); }
+        }
+
+        async function deleteSession(id) {
+            try {
+                await fetch(`/sessions/${id}`, { method: 'DELETE' });
+                if (id === sID) newSession();
+                else loadSessions();
+            } catch (e) { console.error('Failed to delete session:', e); }
+        }
+
+        /* ========== RAG doc count ========== */
+        async function loadDocCount() {
+            try {
+                const r = await fetch('/docs/count');
+                const data = await r.json();
+                document.getElementById('doc-count').textContent = data.count;
+            } catch (e) {
+                document.getElementById('doc-count').textContent = '—';
+            }
+        }
+
+        /* ========== References ========== */
+        const refStore = {};
+
+        async function loadReferences() {
+            try {
+                const r = await fetch(`/history/${sID}`);
+                const data = await r.json();
+                const msgs = data.messages || [];
+                const found = {};
+
+                for (const m of msgs) {
+                    if (m.role !== 'user') continue;
+                    const re = /SOURCE:\s*(.+?)\s*\(score\s*([\d.]+)\)\n([\s\S]*?)(?=\nSOURCE:|\nQuestion:|$)/g;
+                    let match;
+                    while ((match = re.exec(m.content)) !== null) {
+                        const name = match[1].trim();
+                        const score = parseFloat(match[2]);
+                        const chunk = match[3].trim();
+                        if (!found[name] || found[name].score < score) {
+                            found[name] = { score, chunks: [] };
+                        }
+                        if (!found[name].chunks.includes(chunk)) {
+                            found[name].chunks.push(chunk);
+                        }
+                    }
+                }
+
+                Object.assign(refStore, found);
+                renderReferences(found);
+            } catch (e) { console.error('Failed to load references:', e); }
+        }
+
+        function renderReferences(refs) {
+            const container = document.getElementById('ref-list');
+            const names = Object.keys(refs);
+            if (!names.length) {
+                container.innerHTML = '<div class="ref-placeholder">No references yet</div>';
+                return;
+            }
+            names.sort((a, b) => refs[b].score - refs[a].score);
+            container.innerHTML = names.map(name => `
+                <div class="ref-item" onclick="openDocViewer('${esc(name).replace(/'/g, "\\'")}')">
+                    <span class="material-icons-round" style="font-size:15px; flex-shrink:0;">description</span>
+                    <span style="overflow:hidden; text-overflow:ellipsis;">${esc(name)}</span>
+                    <span class="ref-score">${(refs[name].score * 100).toFixed(0)}%</span>
+                </div>
+            `).join('');
+        }
+
+        function openDocViewer(name) {
+            const ref = refStore[name];
+            if (!ref) return;
+            document.getElementById('doc-viewer-title').textContent = name;
+            document.getElementById('doc-viewer-body').textContent = ref.chunks.join('\n\n─────────────────────────\n\n');
+            document.getElementById('doc-overlay').classList.add('open');
+        }
+
+        function closeDocViewer() {
+            document.getElementById('doc-overlay').classList.remove('open');
+        }
+
+        /* ========== Fishbone renderer ========== */
+        function wrapText(text, maxPerLine) {
+            const words = text.split(/\s+/);
+            const lines = [];
+            let cur = '';
+            for (const w of words) {
+                if (cur && (cur.length + 1 + w.length) > maxPerLine) {
+                    lines.push(cur);
+                    cur = w;
+                } else {
+                    cur = cur ? cur + ' ' + w : w;
+                }
+            }
+            if (cur) lines.push(cur);
+            return lines;
+        }
+
+        function renderFishbone(issueName, causes) {
+            const svg = document.getElementById('fishbone-svg');
+            if (!causes || !causes.length) {
+                svg.setAttribute('viewBox', '0 0 310 170');
+                svg.innerHTML = '<text x="155" y="90" fill="#8B949E" font-size="11" text-anchor="middle" font-family="sans-serif">Awaiting analysis...</text>';
+                return;
+            }
+
+            const n = causes.length;
+            const colW = Math.max(80, 90);
+            const W = Math.max(320, n * colW + 160);
+            const lineH = 12;
+            const charsPerLine = Math.max(8, Math.floor(colW / 6));
+
+            const allWrapped = causes.map(c => wrapText(c, charsPerLine));
+            const maxLines = Math.max(...allWrapped.map(l => l.length), 1);
+            const labelBlockH = maxLines * lineH;
+            const boneLen = 45;
+            const labelPad = 8;
+            const halfH = boneLen + labelBlockH + labelPad + 10;
+            const H = halfH * 2 + 4;
+            const cy = H / 2;
+
+            svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+
+            const issueLines = wrapText(issueName, 12);
+            const issueBoxH = Math.max(28, issueLines.length * 14 + 10);
+            const issueBoxW = Math.min(140, Math.max(...issueLines.map(l => l.length)) * 7 + 20);
+            const headLeft = W - issueBoxW - 8;
+            const spineEnd = headLeft - 12;
+            const spineStart = 15;
+            let out = '';
+
+            out += `<line x1="${spineStart}" y1="${cy}" x2="${spineEnd}" y2="${cy}" stroke="#8B949E" stroke-width="2"/>`;
+            out += `<polygon points="${spineEnd},${cy - 5} ${spineEnd + 10},${cy} ${spineEnd},${cy + 5}" fill="#C026D3"/>`;
+
+            const boxX = spineEnd + 13;
+            out += `<rect x="${boxX}" y="${cy - issueBoxH / 2}" width="${issueBoxW}" height="${issueBoxH}" rx="4" fill="#161B22" stroke="#C026D3" stroke-width="1.5"/>`;
+            const issueTextTop = cy - ((issueLines.length - 1) * 14) / 2 + 4;
+            issueLines.forEach((line, li) => {
+                out += `<text x="${boxX + issueBoxW / 2}" y="${issueTextTop + li * 14}" fill="#C026D3" font-size="10" font-weight="bold" text-anchor="middle" font-family="sans-serif">${esc(line)}</text>`;
+            });
+
+            const usable = spineEnd - spineStart - 20;
+            const gap = usable / n;
+
+            for (let i = 0; i < n; i++) {
+                const bx = spineStart + 15 + gap * (i + 0.5);
+                const top = i % 2 === 0;
+                const dx = 24;
+                const ex = bx - dx;
+                const ey = top ? cy - boneLen : cy + boneLen;
+
+                out += `<line x1="${bx}" y1="${cy}" x2="${ex}" y2="${ey}" stroke="#30363D" stroke-width="1.5"/>`;
+                out += `<circle cx="${bx}" cy="${cy}" r="2.5" fill="#C026D3"/>`;
+
+                const lines = allWrapped[i];
+                const baseY = top
+                    ? ey - labelPad - (lines.length - 1) * lineH
+                    : ey + labelPad + lineH;
+
+                lines.forEach((line, li) => {
+                    out += `<text x="${ex}" y="${baseY + li * lineH}" fill="#06B6D4" font-size="9" text-anchor="middle" font-family="sans-serif">${esc(line)}</text>`;
+                });
+            }
+            svg.innerHTML = out;
+        }
+
+        /* ========== Bullet list renderer ========== */
+        function renderBullets(listId, items, placeholder) {
+            const el = document.getElementById(listId);
+            if (!items || !items.length) {
+                el.innerHTML = `<div class="bullet-placeholder">${placeholder}</div>`;
+                return;
+            }
+            el.innerHTML = items.map(t => `<li>${esc(t)}</li>`).join('');
+        }
+
+        /* ========== Analyze conversation ========== */
+        async function analyzeConversation() {
+            const statusEl = document.getElementById('analysis-status');
+            statusEl.textContent = '\u27F3 Analyzing...';
+            try {
+                const r = await fetch(`/analyze/${sID}`);
+                const data = await r.json();
+                renderFishbone(data.issue_name || '', data.root_causes || []);
+                renderBullets('root-cause-list', data.root_cause_summary, 'Awaiting investigation...');
+                renderBullets('corrective-actions-list', data.corrective_actions, 'Awaiting investigation...');
+                statusEl.textContent = '';
+            } catch (e) {
+                statusEl.textContent = '';
+                console.error('Analysis error:', e);
+            }
+        }
+
+        /* ========== Image handling ========== */
+        let selectedImages = [];
+
+        function addImage(file) {
+            if (!file.type.startsWith('image/')) return;
+            selectedImages.push(file);
+            updateImagePreview();
+        }
+
+        function removeImage(index) {
+            selectedImages.splice(index, 1);
+            updateImagePreview();
+        }
+
+        function updateImagePreview() {
+            const container = document.getElementById('image-preview-container');
+            container.innerHTML = '';
+            selectedImages.forEach((file, index) => {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const div = document.createElement('div');
+                    div.className = 'image-preview';
+                    div.innerHTML = `
+                        <img src="${e.target.result}" alt="Preview">
+                        <button class="remove-btn" onclick="removeImage(${index})">×</button>
+                    `;
+                    container.appendChild(div);
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        const inputWrapper = document.getElementById('input-wrapper');
+        const fileInput = document.getElementById('file-input');
+
+        inputWrapper.addEventListener('dragover', (e) => { e.preventDefault(); inputWrapper.classList.add('drag-over'); });
+        inputWrapper.addEventListener('dragleave', () => { inputWrapper.classList.remove('drag-over'); });
+        inputWrapper.addEventListener('drop', (e) => {
+            e.preventDefault();
+            inputWrapper.classList.remove('drag-over');
+            Array.from(e.dataTransfer.files).forEach(f => addImage(f));
+        });
+        fileInput.addEventListener('change', (e) => {
+            Array.from(e.target.files).forEach(f => addImage(f));
+            e.target.value = '';
+        });
+
+        /* ========== Chat ========== */
+        async function sendMessage() {
+            const input = document.getElementById('user-input');
+            const msg = input.value.trim();
+            if (!msg) return;
+
+            const chatBox = document.getElementById('chat-box');
+            chatBox.innerHTML += `<div class="user-msg">${esc(msg)}</div>`;
+            input.value = '';
+            selectedImages = [];
+            updateImagePreview();
+            document.getElementById('problem-statement').textContent = msg;
+            chatBox.scrollTop = chatBox.scrollHeight;
+
+            try {
+                const r = await fetch('/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ session_id: sID, message: msg })
+                });
+                const d = await r.json();
+
+                const aiReply = d.reply || 'No reply from AI';
+                const aiConf = (d.confidence * 100) || 0;
+
+                chatBox.innerHTML += `<div class="message-content">${aiReply}</div>`;
+                document.getElementById('conf-val').textContent = aiConf.toFixed(0) + '%';
+                document.getElementById('conf-bar').style.width = aiConf + '%';
+                chatBox.scrollTop = chatBox.scrollHeight;
+
+                loadSessions();
+                analyzeConversation();
+                loadReferences();
+            } catch (e) {
+                chatBox.innerHTML += `<div class="message-content" style="color:#EF4444;">Connection Error: ${e.message}</div>`;
+            }
+        }
+
+        /* ========== Init ========== */
+        loadSessions();
+        loadDocCount();
+    </script>
+</body>
+</html>

@@ -1,0 +1,16 @@
+SX250H DID Writing Error Analysis Report
+
+Problem Statement
+Vehicle configuration (DID) cannot be written to SX250H sample units after assembly due to mismatched component and hardware version numbers.
+Containment
+All problematic units cannot accept system configurations and thus contained on the factory floor.
+Root Cause Identification / Failure Analysis
+Pass key information on the hosts of SX250H project was not maintained, keeping the same pass key as SX210. Thus, data update was a two-step process: 1. input the SX210 pass key while selecting SX210 project, and 2. write in hardware version information while selecting SX250H project. The second step was performed incorrectly by having SX210 project still selected.
+No further offline check of the host’s hardware information before shipping downstream.
+Corrective Action
+Short term: manually overwrite hardware version numbers.
+Long term: maintain up-to-date, and distinct pass keys for each project.
+Validation
+
+Preventative Action
+Electronic controls system engineers designated to maintain each project’s pass key information to ensure correct project information was written to the host computer. Successful hardware information writes will be screenshotted and stored for records.

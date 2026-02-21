@@ -1,0 +1,19 @@
+SX250X Project Summer Calibration Power-on Initialization - CDU Level 4 Fault and DCDC Level 1 Fault Analysis Report
+
+Problem Statement
+During the summer trim’s power-on initialization, CDU reported a Level 4 fault and DCDC reported a Level 1 fault (Fault codes: 126, 63, 60).
+Vendor: 深圳陆巡
+Problematic batch: MCUR:
+SW: 1.00.B_250722_8055_00
+CDU: 250604
+Containment
+All failed units have been found during initialization on the factory floor.
+Root Cause Identification / Failure Analysis
+All three error codes concern communication timeout. During software power on initialization, OBC and DCDC will check the BMS on/off commands, although normally the BMS would issue no responses within the first 1s.
+The software logic missed the 2s wake-up delay communication check strategy specified in the 陆巡 'Diagnostic Investigation Table'.
+Corrective Action
+Updated software (Version SW:DCDC.1.3D.09) to adjust the start time to 2 seconds after OBC wake-up.
+Validation
+Verified by calibration personnel; the issue is confirmed as rectified in the new software version.
+Preventative Action
+Added relevant test cases for initialization timeouts; upgraded 'Software Change Management Specification V0.1' to mandate strict checking against software specifications. Software team leads requested to follow the specification and check the software engineer’s work.

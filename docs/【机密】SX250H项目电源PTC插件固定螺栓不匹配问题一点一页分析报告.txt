@@ -1,0 +1,15 @@
+SX250H Project Power Supply PTC Plugin Fixing Bolt Mismatch Analysis Report
+
+Problem Statement
+Power supply PTC interface assembly bolts are mismatched. Assembly bolt for the power source PTC interface has been changed from M5 to M4 bolts, but the 陆巡 power supply housing still uses M5x0.8x12.
+Problematic component batch: summer trim demo units.
+Containment
+Root Cause Identification / Failure Analysis
+Customer requested assembly with M4x0.7x12 bolt, but that change request was not propagated to the vendor. The latest interface definition did not reflect such a change, and our company also did not notice the change otherwise.
+Corrective Action
+Short term: Provide M5 bolts for system assembly.
+Deliver the bolt definition change request to the supplier.
+Validation
+
+Preventative Action
+Add interface definition to the change control table.

@@ -1,0 +1,14 @@
+SX250H Summer Trim CDU Power-on DCDC/OBC Entering Standby Instead of Initialization Analysis Report
+
+Problem Statement
+At power-on, the DCDC/OBC components report a 'Standby' status instead of the required 'Initial' state.
+Containment
+Root Cause Identification / Failure Analysis
+Software status transitioned within 10 ms, and is significantly faster than the DCDC/OBC report cycle time of 100 ms. By then, the status was already at “standby”.
+In addition, what the communication matrix requested was the initial value of “initial”, instead of the current status from DCDC/OBC. There was a gap in the understanding of the design team.
+Corrective Action
+Modified software to force the first message frame to report the 'Initial' value regardless of current state machine status. Updated the software on the affected units.
+Validation
+Verified by test engineers; first-frame status now correctly reports as 'Initial' as per the vehicle communication matrix.
+Preventative Action
+Added specific test cases for first-frame status reporting. Added requirements, and software management support documentations.

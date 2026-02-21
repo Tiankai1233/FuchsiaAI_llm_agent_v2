@@ -1,0 +1,62 @@
+SX250-SE02-A15 DCDC Output Power Below Spec
+Problem Statement
+The electric drive system, maintained at a constant 65℃ with a 8L/min recirculation, output lower power than expected.
+Scenario 1: Input 630 Vdc, operating at CC (constant current), output expected at 14V. Open circuit voltage (OCV) measured to be 14V; with load drawing constant current at 213A, electrical load shows output voltage of 10.7572V. Multiimeter measured the output voltage to be 12.94V. Output voltage and current continued to decrease after 1 minute of operation.
+Scenario 2: Input 630 Vdc, operating at CV (constant voltage) of 12V. Output current was measured to be 214A, and output voltage was 11.996V, below the expected power of 3kW.
+Conclusion: Neither CC or CV mode could achieve the power output of ⩾ 3kW.
+Where: JKDL factory B zone offline testing.
+When: 2025/07/21
+Impact: 10x
+Severity: low. Low power could still support whole car operation.
+
+Containment
+Costumer End:
+6x from storage assessed at storage to be okay to support whole car operation.
+2x off line testing assessed to be okay to support whole car operation.
+No impact to post-sale services.
+Internal:
+No impact to production.
+2x from storage assessed to be okay to support whole car operation.
+No impact to components stock.
+No impact to systems in transit.
+No impact to IQC.
+Supplier:
+No impact to IQC
+No impact to supplier process.
+Others
+None.
+
+Root Cause Identification / Failure Analysis
+Reproduction
+At constant temperature of 65℃, CC mode, DCDC input of 630Vdc, load current of 215A, output voltage dropped from 13.8V to 12.5V, identical to the customer feedback.
+At constant temperature of 65℃, CV mode, DCDC input of 630Vdc, output voltage of 14V, the load voltage is 13.5V with output current at 213.2A. Output power was 2878.2W, lower than the 3kW spec.
+Checked system components across other offerings — Same components as platformed across other products with no issues.
+Checked end of line (EOL) testing and found in-spec output voltage and current.
+Checked software CC setpoint tolerance was ±2A. While the setpoint was at 215A, throttling was triggered at 213.9A. Main failure mechanism.
+Checked voltage calibration. Output voltage readout accuracy meets 1% spec.
+Checked current calibration between actual output current vs. measured current. Due to the large (±2A) tolerance of the current measurement, finding here was inconclusive.
+Checked component temperature and it exceeded the temperature check point of 95℃, throttling current output. Main failure mechanism.
+Confirmation
+Adjusted DCDC current limit to be 220A, as well as the coolant temperature to be at 50℃, to provide headroom. Input voltage set constant at 630 Vdc. Under CC mode, with an output current of 215A, output voltage holds steady at 14V; under CV mode, with an output voltage of 14V, the load voltage is 12.3V, output current of 215.30A. In either mode, output power stays above 3kW.
+With coolant temperature of 65℃, ambient temperature of 85℃, DCDC input of 630Vdc, output voltage of 14V, DCDC triggered temperature setpoint at 98℃ (> 95℃), resulted in output power being below 3kW. Coolant temperature was also found to exceed the control temperature due to the coolant flow path picking up heat prior to entering the electric drive.
+Highest temperature occurred at the secondary-side synchronous rectification (SSR) MOS, thus the software samples its temperature of the MOS aluminum substrate via the NTV resistance. System operates nominally between 45~95℃, providing in-spec power. When the temperature was between 95~105℃, output power decreases linearly. When the temperature exceeded 110℃, over-temperature protection (OTP) was triggered and DCDC is shutdown.
+With coolant temperature of 65℃, 85℃ ambient temperature, DCDC’s CC setpoint of 220A, after triggering the throttling temperature setpoint, SSR temperature peaked at ~123℃ with its temperature limit being 175℃. There would be room to raise the trigger temperature for throttling.
+Raising the component temperature setpoint from 95℃ to 110℃ resulted in the SSR temperature of 132℃, still below the safety limit of 140℃, while satisfying the 3kW output.
+Due to the coolant entering the electric drive at 68℃ instead of 65℃, new coolant setpoint was evaluated. With 68℃ as the coolant temperature, combined with the temperature protection trigger adjustment, the system was able to provide 3kW power without violating sub-component temperature safety limits.
+Conclusion
+In CC mode, due to the low precision of the current amperage readout, current was prematurely throttled prior to reaching the current limit.
+In CV mode, component temperature exceeded the over-temperature protection setpoint of 95℃, throttling current.
+
+Corrective Action
+DCDC output current setpoint elevated from 215A to 220A.
+Optimize the DCDC temperature throttling curve, raising the throttling temperature from 95℃ to 110℃.
+Power requirement set to >3020W to flag any low power output units.
+
+Validation
+No power throttling observed after reaching steady state (~ 30 minutes).
+At 68℃ coolant temperature, 85℃ ambient temperature, the output power exceeded 3kW.
+3x electric drives with output power of 2990W were judged failures. 2x electric drives with output of 3028W were judged as passing. Each electric drive was tested 5 times.
+
+Preventative Measures
+Added to knowledge base. Included into new product design inspection.
+Incorporate customer special requirements into internal testing criteria.

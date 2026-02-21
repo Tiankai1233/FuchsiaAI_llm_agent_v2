@@ -1,0 +1,17 @@
+SX250H-SE02-F1L Project PTC1 Interface Assembly Failure 8D Report
+	
+	
+	
+	
+Problem Statement
+PTC1 cable interface dimensions are incorrect, leading to the inability to install the PTC1 cable during vehicle assembly.
+Containment
+?? personnel assisted onsite to manually adjust the PTC1 cable length (cutting extra length and re-crimping) to allow assembly.
+Root Cause Identification / Failure Analysis
+Occurrence: The interface position was moved during the second design phase for EMC improvements, Although the change list was not comprehensive. The cable length was not updated to adapt to the updated PTC1 interface location.
+Corrective Action
+The PTC1 interface position was moved back to match the first-round sample design; the EMC improvement list was updated to include all position changes.
+Validation
+Confirmed via updated design drawings and verification of the corrected assembly on subsequent sample units.
+Preventative Action
+Developed a 'Sample Inspection Standard' that includes interface position checks; updated the R&D process to mandate inspection criteria during early prototype stages.
